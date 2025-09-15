@@ -1,0 +1,12 @@
+# Backend
+Backend/node_modules/
+Backend/.env
+Backend/package-lock.json
+
+# Frontend
+Frontend/node_modules/
+Frontend/package-lock.json
+
+# System files
+.DS_Store
+Thumbs.db

@@ -1,0 +1,204 @@
+/* Order Confirmation Styles */
+.order-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 1000;
+  padding: 20px;
+}
+
+.order-container {
+  background: white;
+  border-radius: 8px;
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+  max-width: 600px;
+  width: 100%;
+  padding: 20px;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  max-height: 80vh;
+  overflow-y: auto;
+}
+
+/* Order Header */
+.order-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+}
+
+.order-header h2 {
+  margin: 0;
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.close-order-btn {
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #666;
+  padding: 0;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border-radius: 50%;
+  transition: background-color 0.3s;
+}
+
+.close-order-btn:hover {
+  background-color: #e9ecef;
+  color: #333;
+}
+
+/* Order Error */
+.order-error {
+  background-color: #f8d7da;
+  color: #721c24;
+  padding: 15px;
+  border-radius: 4px;
+  margin-bottom: 15px;
+  border: 1px solid #f5c6cb;
+}
+
+/* Order Summary */
+.order-summary h3 {
+  margin: 0;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.summary-items {
+  margin-top: 15px;
+  font-size: 1rem;
+}
+
+.summary-item {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+.summary-total {
+  margin-top: 15px;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #333;
+}
+
+.total-row {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 10px;
+}
+
+/* Order Form */
+.order-form {
+  display: flex;
+  flex-direction: column;
+  gap: 15px;
+}
+
+.form-group {
+  display: flex;
+  flex-direction: column;
+}
+
+.form-group label {
+  font-size: 1rem;
+  font-weight: 500;
+  color: #333;
+  margin-bottom: 5px;
+}
+
+.form-group textarea,
+.form-group select,
+.form-group input {
+  padding: 12px;
+  border: 1px solid #ddd;
+  border-radius: 4px;
+  font-size: 1rem;
+  color: #333;
+}
+
+.form-group textarea:focus,
+.form-group select:focus,
+.form-group input:focus {
+  border-color: #007bff;
+  box-shadow: 0 0 0 2px rgba(0,123,255,0.25);
+}
+
+.form-buttons {
+  display: flex;
+  justify-content: space-between;
+}
+
+.cancel-btn,
+.confirm-order-btn {
+  padding: 12px;
+  border-radius: 4px;
+  font-size: 1rem;
+  font-weight: 500;
+  width: 48%;
+  cursor: pointer;
+}
+
+.cancel-btn {
+  background-color: #6c757d;
+  color: white;
+  border: none;
+}
+
+.cancel-btn:hover {
+  background-color: #5a6268;
+}
+
+.confirm-order-btn {
+  background-color: #28a745;
+  color: white;
+  border: none;
+}
+
+.confirm-order-btn:hover {
+  background-color: #218838;
+}
+
+.confirm-order-btn:disabled {
+  background-color: #6c757d;
+  cursor: not-allowed;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .order-container {
+    padding: 15px;
+  }
+
+  .order-summary {
+    font-size: 1rem;
+  }
+
+  .summary-item {
+    font-size: 0.9rem;
+  }
+
+  .order-form {
+    gap: 10px;
+  }
+
+  .form-group textarea {
+    font-size: 0.9rem;
+  }
+}
