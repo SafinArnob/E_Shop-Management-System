@@ -1,5 +1,6 @@
 import cartModel from '../models/cartModel.js';
 import productModel from '../models/productModel.js';
+import discountService from './discountService.js'
 
 // Add product to cart
 const addToCart = async (customerId, productId, quantity = 1) => {
@@ -224,6 +225,73 @@ const validateCart = async (customerId) => {
   }
 };
 
+//function to validate cart with discount
+const validateCartWithDiscount = async (customerId, discountCode = null) => {
+  try {
+    if (!customerId) {
+      throw new Error('Customer ID is required');
+    }
+
+    const cartValidation = await validateCart(customerId);
+    
+    if (!cartValidation.valid) {
+      return cartValidation;
+    }
+
+    const cart = cartValidation.cart;
+    
+    if (!cart || !cart.items.length) {
+      return {
+        valid: true,
+        message: 'Cart is empty',
+        cart,
+        discount_applicable: false
+      };
+    }
+
+    let discountResult = null;
+    if (discountCode) {
+      discountResult = await discountService.applyDiscountCode(discountCode, cart.items);
+    }
+
+    return {
+      valid: true,
+      cart,
+      discount_result: discountResult,
+      discount_applicable: discountResult ? discountResult.success : false
+    };
+  } catch (error) {
+    throw new Error(error.message || 'Error validating cart with discount');
+  }
+};
+
+//function to apply discount to cart
+const applyDiscountToCart = async (customerId, discountCode) => {
+  try {
+    if (!customerId || !discountCode) {
+      throw new Error('Customer ID and discount code are required');
+    }
+
+    const cart = await getCart(customerId);
+    
+    if (!cart || !cart.items.length) {
+      throw new Error('Cart is empty. Cannot apply discount.');
+    }
+
+    const discountResult = await discountService.applyDiscountCode(discountCode, cart.items);
+    
+    return {
+      success: discountResult.success,
+      message: discountResult.success ? 'Discount applied successfully' : discountResult.message,
+      cart,
+      discount_result: discountResult
+    };
+  } catch (error) {
+    throw new Error(error.message || 'Error applying discount to cart');
+  }
+};
+
+
 export default {
   addToCart,
   getCart,
@@ -231,5 +299,7 @@ export default {
   removeFromCart,
   clearCart,
   getCartItemCount,
-  validateCart
+  validateCart,
+  validateCartWithDiscount,  
+  applyDiscountToCart
 };

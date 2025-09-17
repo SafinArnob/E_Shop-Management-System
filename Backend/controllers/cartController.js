@@ -158,3 +158,95 @@ export const validateCart = async (req, res) => {
   }
 };
 
+// Apply discount to cart
+export const applyDiscountToCart = async (req, res) => {
+  try {
+    const customerId = req.user.userId;
+    const { discount_code } = req.body;
+
+    // Check if user is a customer
+    if (req.user.role !== 'customer') {
+      return res.status(403).json({ 
+        message: 'Access denied. Only customers can apply discounts to cart.' 
+      });
+    }
+
+    if (!discount_code) {
+      return res.status(400).json({
+        message: 'Discount code is required'
+      });
+    }
+
+    const result = await cartService.applyDiscountToCart(customerId, discount_code);
+    
+    if (result.success) {
+      res.json(result);
+    } else {
+      res.status(400).json(result);
+    }
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Error applying discount to cart', 
+      error: error.message 
+    });
+  }
+};
+
+// Validate cart with discount
+export const validateCartWithDiscount = async (req, res) => {
+  try {
+    const customerId = req.user.userId;
+    const { discount_code } = req.query;
+
+    // Check if user is a customer
+    if (req.user.role !== 'customer') {
+      return res.status(403).json({ 
+        message: 'Access denied. Only customers can validate cart.' 
+      });
+    }
+
+    const result = await cartService.validateCartWithDiscount(customerId, discount_code);
+    res.json(result);
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Error validating cart with discount', 
+      error: error.message 
+    });
+  }
+};
+
+// Get cart with discount preview
+export const getCartWithDiscount = async (req, res) => {
+  try {
+    const customerId = req.user.userId;
+    const { discount_code } = req.query;
+
+    // Check if user is a customer
+    if (req.user.role !== 'customer') {
+      return res.status(403).json({ 
+        message: 'Access denied. Only customers can view cart.' 
+      });
+    }
+
+    const cart = await cartService.getCart(customerId);
+    
+    if (discount_code && cart && cart.items.length > 0) {
+      // Import discountService
+      const discountService = await import('../services/discountService.js');
+      const discountResult = await discountService.default.applyDiscountCode(discount_code, cart.items);
+      
+      return res.json({
+        cart,
+        discount_preview: discountResult
+      });
+    }
+    
+    res.json({ cart, discount_preview: null });
+  } catch (error) {
+    res.status(500).json({ 
+      message: 'Error fetching cart with discount', 
+      error: error.message 
+    });
+  }
+};
+

@@ -16,6 +16,8 @@ const createOrderFromCart = (customerId, orderData) => {
     
     const {
       totalAmount,
+      originalAmount,
+      discountAmount,
       totalItems,
       shippingAddress,
       billingAddress,
@@ -25,14 +27,16 @@ const createOrderFromCart = (customerId, orderData) => {
 
     const orderQuery = `
       INSERT INTO \`order\` (
-        id, customer_id, order_number, status, total_amount, total_items,
-        shipping_address, billing_address, payment_method, payment_status, notes
-      ) VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, 'pending', ?)
+        id, customer_id, order_number, status, total_amount, original_amount, discount_amount,
+        total_items, shipping_address, billing_address, payment_method, payment_status, notes
+      ) VALUES (?, ?, ?, 'pending', ?, ?, ?, ?, ?, ?, ?, 'pending', ?)
     `;
 
     const orderParams = [
-      orderId, customerId, orderNumber, totalAmount, totalItems,
-      shippingAddress, billingAddress, paymentMethod, notes
+      orderId, customerId, orderNumber, totalAmount, 
+      originalAmount || totalAmount,  // Use originalAmount or fallback to totalAmount
+      discountAmount || 0,           // Use discountAmount or fallback to 0
+      totalItems, shippingAddress, billingAddress, paymentMethod, notes
     ];
 
     db.query(orderQuery, orderParams, (err, result) => {
@@ -79,14 +83,14 @@ const addOrderItems = (orderId, cartItems) => {
   });
 };
 
-// Get order by ID with items and customer details
+// Get order by ID with items and customer details (UPDATED to include discount fields)
 const getOrderById = (orderId) => {
   return new Promise((resolve, reject) => {
     const query = `
       SELECT 
-        o.id, o.customer_id, o.order_number, o.status, o.total_amount, o.total_items,
-        o.shipping_address, o.billing_address, o.payment_method, o.payment_status,
-        o.notes, o.created_at, o.updated_at,
+        o.id, o.customer_id, o.order_number, o.status, o.total_amount, o.original_amount, 
+        o.discount_amount, o.total_items, o.shipping_address, o.billing_address, 
+        o.payment_method, o.payment_status, o.notes, o.created_at, o.updated_at,
         c.name as customer_name, c.email as customer_email, c.phone as customer_phone,
         oi.id as item_id, oi.product_id, oi.product_name, oi.product_brand,
         oi.product_category, oi.quantity, oi.unit_price, oi.total_price,
@@ -115,6 +119,8 @@ const getOrderById = (orderId) => {
         order_number: results[0].order_number,
         status: results[0].status,
         total_amount: results[0].total_amount,
+        original_amount: results[0].original_amount,
+        discount_amount: results[0].discount_amount,
         total_items: results[0].total_items,
         shipping_address: results[0].shipping_address,
         billing_address: results[0].billing_address,
@@ -148,19 +154,20 @@ const getOrderById = (orderId) => {
   });
 };
 
-// Get orders by customer ID
+// Get orders by customer ID (UPDATED to include discount fields)
 const getOrdersByCustomer = (customerId) => {
   return new Promise((resolve, reject) => {
     const query = `
       SELECT 
-        o.id, o.customer_id, o.order_number, o.status, o.total_amount, o.total_items,
-        o.payment_method, o.payment_status, o.created_at, o.updated_at,
-        COUNT(oi.id) as item_count
+        o.id, o.customer_id, o.order_number, o.status, o.total_amount, o.original_amount,
+        o.discount_amount, o.total_items, o.payment_method, o.payment_status, 
+        o.created_at, o.updated_at, COUNT(oi.id) as item_count
       FROM \`order\` o
       LEFT JOIN order_item oi ON o.id = oi.order_id
       WHERE o.customer_id = ?
-      GROUP BY o.id, o.customer_id, o.order_number, o.status, o.total_amount, 
-               o.total_items, o.payment_method, o.payment_status, o.created_at, o.updated_at
+      GROUP BY o.id, o.customer_id, o.order_number, o.status, o.total_amount, o.original_amount,
+               o.discount_amount, o.total_items, o.payment_method, o.payment_status, 
+               o.created_at, o.updated_at
       ORDER BY o.created_at DESC
     `;
 
@@ -201,21 +208,22 @@ const updatePaymentStatus = (orderId, paymentStatus) => {
   });
 };
 
-// Get all orders (for admin/employee) with customer details
+// Get all orders (for admin/employee) with customer details (UPDATED to include discount fields)
 const getAllOrders = (limit = 50, offset = 0) => {
   return new Promise((resolve, reject) => {
     const query = `
       SELECT 
-        o.id, o.customer_id, o.order_number, o.status, o.total_amount, o.total_items,
-        o.payment_method, o.payment_status, o.created_at, o.updated_at,
+        o.id, o.customer_id, o.order_number, o.status, o.total_amount, o.original_amount,
+        o.discount_amount, o.total_items, o.payment_method, o.payment_status, 
+        o.created_at, o.updated_at,
         c.name as customer_name, c.email as customer_email, c.phone as customer_phone,
         COUNT(oi.id) as item_count
       FROM \`order\` o
       LEFT JOIN customer c ON o.customer_id = c.id
       LEFT JOIN order_item oi ON o.id = oi.order_id
-      GROUP BY o.id, o.customer_id, o.order_number, o.status, o.total_amount, 
-               o.total_items, o.payment_method, o.payment_status, o.created_at, o.updated_at,
-               c.name, c.email, c.phone
+      GROUP BY o.id, o.customer_id, o.order_number, o.status, o.total_amount, o.original_amount,
+               o.discount_amount, o.total_items, o.payment_method, o.payment_status, 
+               o.created_at, o.updated_at, c.name, c.email, c.phone
       ORDER BY o.created_at DESC
       LIMIT ? OFFSET ?
     `;
@@ -227,20 +235,24 @@ const getAllOrders = (limit = 50, offset = 0) => {
   });
 };
 
-// Get order statistics
+// Get order statistics (UPDATED to include discount statistics)
 const getOrderStats = () => {
   return new Promise((resolve, reject) => {
     const query = `
       SELECT 
         COUNT(*) as total_orders,
         SUM(total_amount) as total_revenue,
+        SUM(original_amount) as total_original_revenue,
+        SUM(discount_amount) as total_discounts_given,
         AVG(total_amount) as average_order_value,
+        AVG(discount_amount) as average_discount_per_order,
         COUNT(CASE WHEN status = 'pending' THEN 1 END) as pending_orders,
         COUNT(CASE WHEN status = 'confirmed' THEN 1 END) as confirmed_orders,
         COUNT(CASE WHEN status = 'processing' THEN 1 END) as processing_orders,
         COUNT(CASE WHEN status = 'shipped' THEN 1 END) as shipped_orders,
         COUNT(CASE WHEN status = 'delivered' THEN 1 END) as delivered_orders,
-        COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_orders
+        COUNT(CASE WHEN status = 'cancelled' THEN 1 END) as cancelled_orders,
+        COUNT(CASE WHEN discount_amount > 0 THEN 1 END) as orders_with_discounts
       FROM \`order\`
     `;
 
@@ -261,4 +273,3 @@ export default {
   getAllOrders,
   getOrderStats
 };
-
